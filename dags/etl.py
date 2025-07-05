@@ -1,13 +1,13 @@
 import json
 from airflow import DAG
-from airflow.providers.http.operators.http import HttpOperator
+from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.decorators import task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.dates import days_ago
+from datetime import datetime
 
 with DAG(
     dag_id="nasa_apod_postgres",
-    start_date=days_ago(1),
+    start_date=datetime(2025, 7, 5),
     schedule="@daily",
     catchup=False,
 ) as dag:
@@ -15,7 +15,7 @@ with DAG(
     @task
     def create_table():
         postgres_hook = PostgresHook(postgres_conn_id="my_postgres_connection")
-        create_table_query = """"
+        create_table_query = """
         CREATE TABLE IF NOT EXISTS apod_data (
             id SERIAL PRIMARY KEY,
             title VARCHAR(255),
@@ -28,7 +28,7 @@ with DAG(
         postgres_hook.run(create_table_query)
 
     # step 2: Extract NASA API Data(APOD)
-    extract_apod = HttpOperator(
+    extract_apod = SimpleHttpOperator(
         task_id="extract_apod",
         http_conn_id="nasa_api",
         endpoint="planetary/apod",
